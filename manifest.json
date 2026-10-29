@@ -1,0 +1,13 @@
+{
+  "name": "My Meds — As-needed medication log",
+  "short_name": "My Meds",
+  "description": "A private, local as-needed medication dose log.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f7f6f2",
+  "theme_color": "#f7f6f2",
+  "icons": [
+    {"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any"}
+  ]
+}

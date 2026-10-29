@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f7f6f2">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="My Meds">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <title>My Meds — As-needed log</title>
+  <style>
+    :root{color-scheme:light;--bg:#f7f6f2;--card:#fff;--ink:#242925;--muted:#66716a;--line:#e2e5df;--green:#285e4b;--green2:#e3efe8;--amber:#80520b;--amberbg:#fff2d8;--red:#922f2b;--redbg:#fae7e5}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    button,input,textarea{font:inherit}button{cursor:pointer;touch-action:manipulation}
+    .wrap{max-width:720px;margin:0 auto;padding:calc(18px + env(safe-area-inset-top)) 16px calc(30px + env(safe-area-inset-bottom))}
+    header{display:flex;align-items:center;gap:12px;margin-bottom:20px}.logo{width:48px;height:48px;border-radius:15px;background:var(--green2);display:grid;place-items:center;font-size:25px}
+    h1{font-size:27px;letter-spacing:-.6px;margin:0}header p{margin:2px 0 0;color:var(--muted);font-size:14px}
+    .top-actions{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap;justify-content:flex-end}
+    .btn{border:0;border-radius:12px;padding:11px 14px;font-weight:650;background:var(--green);color:#fff}
+    .btn.secondary{background:#fff;color:var(--ink);border:1px solid var(--line)}.btn.small{padding:8px 10px;font-size:14px}
+    .notice{border:1px solid #ead9b3;background:#fff9ec;border-radius:14px;padding:12px 14px;color:#60491f;font-size:13px;margin:0 0 16px}
+    .sectionhead{display:flex;align-items:center;justify-content:space-between;margin:22px 2px 10px}.sectionhead h2{font-size:17px;margin:0}
+    .muted{color:var(--muted)}.smalltext{font-size:13px}
+    .medlist{display:grid;gap:11px}.med{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:15px;box-shadow:0 2px 8px #18271b08}
+    .medtop{display:flex;align-items:flex-start;gap:12px}.pill{width:42px;height:42px;flex:0 0 42px;border-radius:13px;background:#f0f1ec;display:grid;place-items:center;font-size:21px}
+    .medinfo{min-width:0;flex:1}.medname{font-weight:750;font-size:17px;overflow-wrap:anywhere}.doseinfo{font-size:13px;color:var(--muted);margin-top:2px}
+    .last{font-size:13px;color:var(--muted);margin-top:9px}.elapsed{font-size:13px;font-weight:650;margin-top:3px}
+    .warning{font-size:12px;font-weight:650;border-radius:8px;padding:5px 8px;display:inline-block;margin-top:7px;background:var(--amberbg);color:var(--amber)}
+    .warning.red{background:var(--redbg);color:var(--red)}.warning.ok{background:var(--green2);color:var(--green)}
+    .medactions{display:flex;gap:8px;margin-top:13px}.medactions .btn{flex:1}.iconbtn{background:#fff;border:1px solid var(--line);border-radius:11px;padding:10px 12px;color:var(--ink)}
+    .empty{padding:28px 18px;border:1px dashed #cbd2ca;border-radius:16px;text-align:center;color:var(--muted);background:#ffffff80}
+    .panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px;margin-top:16px}
+    .historyitem{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}.historyitem:last-child{border-bottom:0}
+    .historyname{font-weight:650}.historymeta{font-size:13px;color:var(--muted);margin-top:3px}.historydose{text-align:right;font-size:13px;white-space:nowrap}
+    .historycontrols{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    dialog{width:min(560px,calc(100% - 24px));max-height:88dvh;overflow:auto;border:1px solid var(--line);border-radius:20px;padding:20px;background:var(--bg);color:var(--ink)}
+    dialog::backdrop{background:#17221d70}.formrow{margin:13px 0}.formrow label{display:block;font-size:14px;font-weight:650;margin-bottom:6px}.formrow input,.formrow textarea{width:100%;border:1px solid #cfd5ce;border-radius:11px;background:#fff;padding:12px;color:var(--ink)}
+    .formrow small{display:block;color:var(--muted);margin-top:5px;font-size:12px}.formbuttons{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
+    .toast{position:fixed;left:16px;right:16px;bottom:calc(18px + env(safe-area-inset-bottom));max-width:680px;margin:auto;padding:12px 16px;border-radius:13px;background:#243c31;color:#fff;box-shadow:0 8px 28px #0002;z-index:10}
+    .foot{font-size:12px;color:var(--muted);margin-top:24px;line-height:1.5}.hidden{display:none!important}
+    @media(min-width:560px){.medlist{grid-template-columns:1fr 1fr}.medactions{flex-wrap:wrap}.medactions .btn{flex:1 0 100%}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo" aria-hidden="true">💊</div>
+    <div><h1>My Meds</h1><p>As-needed medication log</p></div>
+    <div class="top-actions"><button class="btn" id="addBtn">＋ Add</button></div>
+  </header>
+  <div class="notice"><strong>Personal log only.</strong> Time-interval warnings are based only on the settings you enter; they do not determine whether a dose is safe. Always follow your prescription label or clinician's instructions, including dose limits and interactions.</div>
+  <div class="sectionhead"><h2>My medications</h2><span id="medCount" class="muted smalltext"></span></div>
+  <div id="medList" class="medlist"></div>
+  <div class="sectionhead"><h2>Recent dose history</h2><span class="muted smalltext" id="historyCount"></span></div>
+  <div class="panel" id="historyPanel"></div>
+  <div class="historycontrols">
+    <button class="btn secondary small" id="exportBtn">Export backup</button>
+    <button class="btn secondary small" id="importBtn">Import backup</button>
+    <button class="btn secondary small" id="clearHistoryBtn">Clear dose history…</button>
+    <input type="file" id="importFile" accept="application/json,.json" class="hidden">
+  </div>
+  <p class="foot">Your records are saved in this browser on this iPhone. They are not sent to a server. Clearing Safari website data, removing the web app's site data, or changing browsers may erase them. Export a backup regularly. This app does not provide reminders or medical advice.</p>
+</div>
+<dialog id="medDialog">
+  <form id="medForm">
+    <h2 id="dialogTitle" style="margin:0 0 4px">Add medication</h2>
+    <p class="muted smalltext" style="margin:0 0 14px">No schedule required. Add only the details you want to track.</p>
+    <input type="hidden" id="medId">
+    <div class="formrow"><label for="medName">Medication name *</label><input id="medName" required maxlength="80" autocomplete="off" placeholder="e.g., acetaminophen"></div>
+    <div class="formrow"><label for="medDose">Usual dose / strength (optional)</label><input id="medDose" maxlength="80" placeholder="e.g., 500 mg per tablet"></div>
+    <div class="formrow"><label for="interval">Minimum interval warning (optional)</label><input id="interval" type="number" min="0" max="8760" step="0.5" placeholder="e.g., 6"><small>Enter the interval from your medication instructions, in hours. Leave blank or 0 for no interval warning. This is a reminder aid, not a safety check.</small></div>
+    <div class="formrow"><label for="notes">Personal notes (optional)</label><textarea id="notes" rows="2" maxlength="500" placeholder="Optional tracking notes"></textarea></div>
+    <div class="formbuttons"><button type="button" class="btn secondary" id="cancelMed">Cancel</button><button type="submit" class="btn">Save medication</button></div>
+  </form>
+</dialog>
+<dialog id="doseDialog">
+  <form id="doseForm">
+    <h2 style="margin:0 0 4px">Log dose</h2><p id="doseMedLabel" class="muted smalltext"></p>
+    <input type="hidden" id="doseMedId">
+    <div class="formrow"><label for="doseAmount">Dose taken (optional)</label><input id="doseAmount" maxlength="80" placeholder="e.g., 1 tablet / 500 mg"></div>
+    <div class="formrow"><label for="doseNotes">Notes (optional)</label><textarea id="doseNotes" rows="2" maxlength="500" placeholder="Optional"></textarea></div>
+    <div class="formbuttons"><button type="button" class="btn secondary" id="cancelDose">Cancel</button><button type="submit" class="btn">Confirm dose logged</button></div>
+  </form>
+</dialog>
+<div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+<script>
+(() => {
+  const KEY = "my-meds-pwa-v1";
+  const $ = id => document.getElementById(id);
+  let data = load();
+  let toastTimer;
+  function load() {
+    try {
+      const d = JSON.parse(localStorage.getItem(KEY) || '{"meds":[],"doses":[]}');
+      if (!Array.isArray(d.meds) || !Array.isArray(d.doses)) throw new Error("Invalid data");
+      return d;
+    } catch { return {meds:[],doses:[]}; }
+  }
+  function save() { localStorage.setItem(KEY, JSON.stringify(data)); }
+  function uid() { return (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36)+Math.random().toString(36).slice(2)); }
+  function esc(s="") { return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+  function latest(medId) { return data.doses.filter(d=>d.medId===medId).sort((a,b)=>b.time-a.time)[0] || null; }
+  function fmt(t) { return new Intl.DateTimeFormat(undefined,{dateStyle:"medium",timeStyle:"short"}).format(new Date(t)); }
+  function elapsed(t) {
+    const mins = Math.max(0, Math.floor((Date.now()-t)/60000));
+    const days=Math.floor(mins/1440), hours=Math.floor((mins%1440)/60), m=mins%60;
+    if(days) return `${days}d ${hours}h ago`;
+    if(hours) return `${hours}h ${m}m ago`;
+    return `${m}m ago`;
+  }
+  function notify(msg) { $("toast").textContent=msg; $("toast").classList.remove("hidden"); clearTimeout(toastTimer); toastTimer=setTimeout(()=>$("toast").classList.add("hidden"),2600); }
+  function render() {
+    $("medCount").textContent = `${data.meds.length} medication${data.meds.length===1?"":"s"}`;
+    const list=$("medList");
+    const meds=[...data.meds].sort((a,b)=>a.name.localeCompare(b.name));
+    list.innerHTML = meds.length ? meds.map(m=>{
+      const d=latest(m.id), interval=Number(m.interval)||0;
+      let warning="";
+      if(d && interval>0) {
+        const left=interval*3600000-(Date.now()-d.time);
+        if(left>0) warning=`<div class="warning red">Interval entered: ${esc(interval)} h · ${esc(prettyRemaining(left))} remaining</div>`;
+        else warning=`<div class="warning ok">Entered interval elapsed</div>`;
+      } else if(interval>0) warning=`<div class="warning">Interval entered: ${esc(interval)} h</div>`;
+      return `<article class="med">
+        <div class="medtop"><div class="pill" aria-hidden="true">💊</div><div class="medinfo">
+          <div class="medname">${esc(m.name)}</div><div class="doseinfo">${esc(m.dose||"No usual dose entered")}</div>
+          <div class="last">Last taken: ${d?esc(fmt(d.time)):"Never logged"}</div>
+          ${d?`<div class="elapsed">${esc(elapsed(d.time))}</div>`:""}
+          ${warning}
+          ${m.notes?`<div class="last">Note: ${esc(m.notes)}</div>`:""}
+        </div></div>
+        <div class="medactions"><button class="btn" data-log="${esc(m.id)}">＋ Log dose</button><button class="iconbtn" data-edit="${esc(m.id)}" aria-label="Edit ${esc(m.name)}">Edit</button><button class="iconbtn" data-delete="${esc(m.id)}" aria-label="Delete ${esc(m.name)}">Delete</button></div>
+      </article>`;
+    }).join("") : `<div class="empty"><div style="font-size:28px;margin-bottom:8px">💊</div><strong>No medications yet</strong><p>Add a medication to create your first dose button.</p><button class="btn" id="emptyAdd">＋ Add medication</button></div>`;
+    const history=[...data.doses].sort((a,b)=>b.time-a.time);
+    $("historyCount").textContent=`${history.length} dose${history.length===1?"":"s"}`;
+    $("historyPanel").innerHTML=history.length ? history.slice(0,30).map(d=>{
+      const m=data.meds.find(x=>x.id===d.medId);
+      return `<div class="historyitem"><div><div class="historyname">${esc(m?m.name:"Deleted medication")}</div><div class="historymeta">${esc(fmt(d.time))}${d.notes?` · ${esc(d.notes)}`:""}</div></div><div class="historydose">${esc(d.amount||m?.dose||"Dose logged")}<br><button class="iconbtn" style="padding:5px 8px;margin-top:5px;font-size:12px" data-undo="${esc(d.id)}">Undo</button></div></div>`;
+    }).join("") : `<div class="muted smalltext">Your logged doses will appear here.</div>`;
+    const ea=$("emptyAdd"); if(ea) ea.addEventListener("click",()=>openMed());
+  }
+  function prettyRemaining(ms) { const mins=Math.ceil(ms/60000),h=Math.floor(mins/60),m=mins%60; return h?`${h}h ${m}m`:`${m}m`; }
+  function openMed(m=null) {
+    $("medForm").reset(); $("medId").value=m?.id||"";
+    $("dialogTitle").textContent=m?"Edit medication":"Add medication";
+    $("medName").value=m?.name||""; $("medDose").value=m?.dose||"";
+    $("interval").value=m?.interval||""; $("notes").value=m?.notes||"";
+    $("medDialog").showModal();
+  }
+  $("addBtn").addEventListener("click",()=>openMed());
+  $("cancelMed").addEventListener("click",()=>$("medDialog").close());
+  $("medForm").addEventListener("submit",e=>{
+    e.preventDefault();
+    const id=$("medId").value || uid();
+    const med={id,name:$("medName").value.trim(),dose:$("medDose").value.trim(),interval:Math.max(0,Number($("interval").value)||0),notes:$("notes").value.trim()};
+    if(!med.name) return;
+    const i=data.meds.findIndex(m=>m.id===id);
+    if(i>=0) data.meds[i]=med; else data.meds.push(med);
+    save(); $("medDialog").close(); render(); notify(i>=0?"Medication updated":"Medication added");
+  });
+  $("medList").addEventListener("click",e=>{
+    const log=e.target.closest("[data-log]")?.dataset.log;
+    const edit=e.target.closest("[data-edit]")?.dataset.edit;
+    const del=e.target.closest("[data-delete]")?.dataset.delete;
+    if(log) {
+      const m=data.meds.find(x=>x.id===log); if(!m)return;
+      $("doseForm").reset(); $("doseMedId").value=m.id; $("doseMedLabel").textContent=m.name+(m.dose?" · "+m.dose:"");
+      $("doseDialog").showModal();
+    }
+    if(edit) openMed(data.meds.find(x=>x.id===edit));
+    if(del) {
+      const m=data.meds.find(x=>x.id===del); if(!m)return;
+      if(confirm(`Delete ${m.name} from your medication list? Existing dose history will be retained as “Deleted medication.”`)) {
+        data.meds=data.meds.filter(x=>x.id!==del); save(); render(); notify("Medication removed");
+      }
+    }
+  });
+  $("cancelDose").addEventListener("click",()=>$("doseDialog").close());
+  $("doseForm").addEventListener("submit",e=>{
+    e.preventDefault();
+    const medId=$("doseMedId").value;
+    data.doses.push({id:uid(),medId,time:Date.now(),amount:$("doseAmount").value.trim(),notes:$("doseNotes").value.trim()});
+    save(); $("doseDialog").close(); render(); notify("Dose logged with current time");
+  });
+  $("historyPanel").addEventListener("click",e=>{
+    const id=e.target.closest("[data-undo]")?.dataset.undo; if(!id)return;
+    if(confirm("Remove this dose record? This cannot be undone unless you have a backup.")) {
+      data.doses=data.doses.filter(d=>d.id!==id); save(); render(); notify("Dose record removed");
+    }
+  });
+  $("exportBtn").addEventListener("click",()=>{
+    const blob=new Blob([JSON.stringify({...data,exportedAt:new Date().toISOString(),formatVersion:1},null,2)],{type:"application/json"});
+    const url=URL.createObjectURL(blob), a=document.createElement("a"); a.href=url; a.download="my-meds-backup-"+new Date().toISOString().slice(0,10)+".json"; a.click(); URL.revokeObjectURL(url); notify("Backup export started");
+  });
+  $("importBtn").addEventListener("click",()=>$("importFile").click());
+  $("importFile").addEventListener("change",async e=>{
+    const file=e.target.files?.[0]; if(!file)return;
+    try {
+      const d=JSON.parse(await file.text());
+      if(!Array.isArray(d.meds)||!Array.isArray(d.doses)||!d.meds.every(m=>m.id&&m.name)||!d.doses.every(x=>x.id&&x.medId&&Number.isFinite(x.time))) throw new Error("Invalid backup");
+      if(confirm("Import will replace the current medication list and dose history. Export a backup first if you want to keep the current data. Continue?")) {
+        data={meds:d.meds,doses:d.doses}; save(); render(); notify("Backup imported");
+      }
+    } catch { alert("That file doesn't look like a valid My Meds backup."); }
+    e.target.value="";
+  });
+  $("clearHistoryBtn").addEventListener("click",()=>{
+    if(confirm("Clear ALL dose history? Your medication list will remain, but last-dose timestamps will be removed. Export a backup first if needed.")) {
+      data.doses=[]; save(); render(); notify("Dose history cleared");
+    }
+  });
+  // Refresh elapsed-time labels while the app is open; never triggers reminders.
+  render(); setInterval(render,60000);
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden)render();});
+  if("serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("./service-worker.js").catch(()=>{});
+})();
+</script>
+</body>
+</html>
