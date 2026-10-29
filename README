@@ -1,0 +1,44 @@
+# My Meds — personal as-needed medication logger
+
+A small Progressive Web App (PWA) designed for one-tap dose logging, per-medication last-dose timestamps, dose history, and optional user-configured interval warnings. It does not schedule medication reminders.
+
+## Important limitations
+
+- Data is stored in the browser's local storage on the device; it is not sent to a server by this app.
+- Browser/site data can be deleted by iOS or by the user. Use **Export backup** regularly and store backups securely.
+- This is a personal log, not a medical device or a dosing recommendation. Interval warnings use only the interval you enter. They do not account for maximum daily doses, other products with the same ingredient, interactions, health conditions, or clinician instructions.
+- A Home Screen PWA is not a native iOS app. It cannot provide a separate native interactive widget for each medication from this code alone.
+
+## Easiest setup: publish privately with GitHub Pages
+
+An iPhone Home Screen web app needs to be served over HTTPS to install reliably and support offline caching. The app's records remain local to your iPhone; hosting the static files does not send dose logs to the host.
+
+1. Download and unzip `my-meds-pwa.zip` on a computer.
+2. Sign in to GitHub and create a new repository. If the repository can be public, create a repository such as `my-meds`. Do not put real medication data or exported backups in the repository.
+3. Upload `index.html`, `manifest.json`, `service-worker.js`, `icon.svg`, and `README.md` to the repository's top level.
+4. In the repository, open **Settings → Pages**. Under the build/deployment source, select **Deploy from a branch**, choose `main` and `/(root)`, then save.
+5. Wait for the Pages URL to appear. It will look like `https://YOUR-USERNAME.github.io/REPOSITORY/`.
+6. On the iPhone, open that HTTPS URL in **Safari** (not an in-app browser).
+7. Tap **Share → Add to Home Screen**. If offered, enable **Open as Web App**, then tap **Add**.
+8. Launch **My Meds** from the new Home Screen icon. Add your medications and configure an interval only when you know the interval specified by your medication instructions.
+
+GitHub Pages may make the app's source files publicly accessible even though your dose records are not hosted there. If you do not want the app code public, use a static host that supports private projects/custom access and HTTPS, or host the static files on a personal server. Never upload your data export to the hosting service.
+
+## How to use
+
+- **Add:** Enter a name, optional strength, and optional minimum-interval warning in hours.
+- **Log dose:** Tap a medication's button, enter the amount actually taken if desired, and confirm. The timestamp is captured at confirmation time.
+- **History:** Review the 30 most recent dose entries in the on-screen list. Export includes the complete history.
+- **Edit / Delete:** Edit the medication details, or remove it from the list. Deleting a medication retains its prior entries as “Deleted medication.”
+- **Undo:** Remove an incorrect dose entry from recent history.
+- **Export backup:** Downloads a JSON file with the full medication list and dose history.
+- **Import backup:** Replaces the current local data with a previously exported backup.
+- **Clear dose history:** Clears all dose entries but leaves medications in place.
+
+## Updating the app
+
+When replacing the code, keep the same hosting URL. If the app remains open during an update, close it fully and reopen it after a short wait. If a new version does not appear, try opening the site in Safari while online, then relaunch the Home Screen app.
+
+## Local development
+
+Serve the folder from an HTTPS static host or a local development server. Opening `index.html` directly from Files is useful for a quick preview, but service-worker/offline and install features will not work from a `file://` URL.
