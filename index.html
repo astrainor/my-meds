@@ -81,7 +81,13 @@
     <input type="hidden" id="doseMedId">
     <div class="formrow"><label for="doseAmount">Dose taken (optional)</label><input id="doseAmount" maxlength="80" placeholder="e.g., 1 tablet / 500 mg"></div>
     <div class="formrow"><label for="doseNotes">Notes (optional)</label><textarea id="doseNotes" rows="2" maxlength="500" placeholder="Optional"></textarea></div>
-    <div class="formbuttons"><button type="button" class="btn secondary" id="cancelDose">Cancel</button><button type="submit" class="btn">Confirm dose logged</button></div>
+    <div class="formrow hidden" id="customTimeRow"><label for="doseTime">Actual date and time taken</label><input id="doseTime" type="datetime-local"></div>
+    <div class="formbuttons">
+      <button type="button" class="btn secondary" id="cancelDose">Cancel</button>
+      <button type="button" class="btn" id="logNowBtn">Log right now</button>
+      <button type="button" class="btn secondary" id="editTimeBtn">Enter a different time</button>
+      <button type="submit" class="btn hidden" id="saveCustomDoseBtn">Save at this time</button>
+    </div>
   </form>
 </dialog>
 <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
@@ -143,6 +149,10 @@
     const ea=$("emptyAdd"); if(ea) ea.addEventListener("click",()=>openMed());
   }
   function prettyRemaining(ms) { const mins=Math.ceil(ms/60000),h=Math.floor(mins/60),m=mins%60; return h?`${h}h ${m}m`:`${m}m`; }
+  function toLocalInputValue(date) {
+    const pad=n=>String(n).padStart(2,"0");
+    return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  }
   function openMed(m=null) {
     $("medForm").reset(); $("medId").value=m?.id||"";
     $("dialogTitle").textContent=m?"Edit medication":"Add medication";
@@ -168,6 +178,11 @@
     if(log) {
       const m=data.meds.find(x=>x.id===log); if(!m)return;
       $("doseForm").reset(); $("doseMedId").value=m.id; $("doseMedLabel").textContent=m.name+(m.dose?" · "+m.dose:"");
+      $("doseTime").value=toLocalInputValue(new Date());
+      $("customTimeRow").classList.add("hidden");
+      $("logNowBtn").classList.remove("hidden");
+      $("editTimeBtn").classList.remove("hidden");
+      $("saveCustomDoseBtn").classList.add("hidden");
       $("doseDialog").showModal();
     }
     if(edit) openMed(data.meds.find(x=>x.id===edit));
@@ -179,11 +194,30 @@
     }
   });
   $("cancelDose").addEventListener("click",()=>$("doseDialog").close());
+  function saveDoseAt(time) {
+    const medId=$("doseMedId").value;
+    data.doses.push({id:uid(),medId,time,amount:$("doseAmount").value.trim(),notes:$("doseNotes").value.trim()});
+    save(); $("doseDialog").close(); render();
+    notify(time < Date.now()-60000 ? "Past dose added to history" : "Dose logged");
+  }
+  $("logNowBtn").addEventListener("click",()=>saveDoseAt(Date.now()));
+  $("editTimeBtn").addEventListener("click",()=>{
+    $("customTimeRow").classList.remove("hidden");
+    $("logNowBtn").classList.add("hidden");
+    $("editTimeBtn").classList.add("hidden");
+    $("saveCustomDoseBtn").classList.remove("hidden");
+    $("doseTime").focus();
+  });
   $("doseForm").addEventListener("submit",e=>{
     e.preventDefault();
-    const medId=$("doseMedId").value;
-    data.doses.push({id:uid(),medId,time:Date.now(),amount:$("doseAmount").value.trim(),notes:$("doseNotes").value.trim()});
-    save(); $("doseDialog").close(); render(); notify("Dose logged with current time");
+    const enteredTime = new Date($("doseTime").value).getTime();
+    if (!$("doseTime").value || !Number.isFinite(enteredTime)) {
+      alert("Please enter a valid date and time."); return;
+    }
+    if (enteredTime > Date.now()) {
+      alert("The dose time cannot be in the future."); return;
+    }
+    saveDoseAt(enteredTime);
   });
   $("historyPanel").addEventListener("click",e=>{
     const id=e.target.closest("[data-undo]")?.dataset.undo; if(!id)return;
