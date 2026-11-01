@@ -24,13 +24,13 @@
     .sectionhead{display:flex;align-items:center;justify-content:space-between;margin:22px 2px 10px}.sectionhead h2{font-size:17px;margin:0}
     .muted{color:var(--muted)}.smalltext{font-size:13px}
     .medlist{display:grid;gap:11px}.med{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:15px;box-shadow:0 2px 8px #18271b08}
-    .medtop{display:flex;align-items:flex-start;gap:12px}.pill{width:42px;height:42px;flex:0 0 42px;border-radius:13px;background:#f0f1ec;display:grid;place-items:center;font-size:21px}
+    .medtop{display:flex;align-items:flex-start;gap:12px}.selectmed{display:flex;align-items:center;padding-top:10px}.selectmed input{width:20px;height:20px;accent-color:var(--green)}.pill{width:42px;height:42px;flex:0 0 42px;border-radius:13px;background:#f0f1ec;display:grid;place-items:center;font-size:21px}
     .medinfo{min-width:0;flex:1}.medname{font-weight:750;font-size:17px;overflow-wrap:anywhere}.doseinfo{font-size:13px;color:var(--muted);margin-top:2px}
     .last{font-size:13px;color:var(--muted);margin-top:9px}.elapsed{font-size:13px;font-weight:650;margin-top:3px}
     .warning{font-size:12px;font-weight:650;border-radius:8px;padding:5px 8px;display:inline-block;margin-top:7px;background:var(--amberbg);color:var(--amber)}
     .warning.red{background:var(--redbg);color:var(--red)}.warning.ok{background:var(--green2);color:var(--green)}
     .medactions{display:flex;gap:8px;margin-top:13px}.medactions .btn{flex:1}.iconbtn{background:#fff;border:1px solid var(--line);border-radius:11px;padding:10px 12px;color:var(--ink)}
-    .empty{padding:28px 18px;border:1px dashed #cbd2ca;border-radius:16px;text-align:center;color:var(--muted);background:#ffffff80}
+    .bulkbar{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--green2);border:1px solid #c9ddd0;border-radius:14px;padding:10px 12px;margin:0 0 12px}.bulkbar .muted{font-size:13px}.empty{padding:28px 18px;border:1px dashed #cbd2ca;border-radius:16px;text-align:center;color:var(--muted);background:#ffffff80}
     .panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px;margin-top:16px}
     .historyitem{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}.historyitem:last-child{border-bottom:0}
     .historyname{font-weight:650}.historymeta{font-size:13px;color:var(--muted);margin-top:3px}.historydose{text-align:right;font-size:13px;white-space:nowrap}
@@ -52,6 +52,7 @@
   </header>
   <div class="notice"><strong>Personal log only.</strong> Time-interval warnings are based only on the settings you enter; they do not determine whether a dose is safe. Always follow your prescription label or clinician's instructions, including dose limits and interactions.</div>
   <div class="sectionhead"><h2>My medications</h2><span id="medCount" class="muted smalltext"></span></div>
+  <div id="bulkBar" class="bulkbar hidden"><span id="bulkCount" class="muted">0 selected</span><button class="btn small" id="bulkLogBtn">Log selected</button></div>
   <div id="medList" class="medlist"></div>
   <div class="sectionhead"><h2>Recent dose history</h2><span class="muted smalltext" id="historyCount"></span></div>
   <div class="panel" id="historyPanel"></div>
@@ -90,6 +91,19 @@
     </div>
   </form>
 </dialog>
+<dialog id="bulkDialog">
+  <form id="bulkForm">
+    <h2 style="margin:0 0 4px">Log selected medications</h2>
+    <p id="bulkMedLabel" class="muted smalltext"></p>
+    <div class="formrow hidden" id="bulkCustomTimeRow"><label for="bulkDoseTime">Actual date and time taken</label><input id="bulkDoseTime" type="datetime-local"></div>
+    <div class="formbuttons">
+      <button type="button" class="btn secondary" id="cancelBulk">Cancel</button>
+      <button type="button" class="btn" id="bulkLogNowBtn">Log right now</button>
+      <button type="button" class="btn secondary" id="bulkEditTimeBtn">Enter a different time</button>
+      <button type="submit" class="btn hidden" id="bulkSaveTimeBtn">Save at this time</button>
+    </div>
+  </form>
+</dialog>
 <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
 <script>
 (() => {
@@ -97,6 +111,7 @@
   const $ = id => document.getElementById(id);
   let data = load();
   let toastTimer;
+  const selectedMeds = new Set();
   function load() {
     try {
       const d = JSON.parse(localStorage.getItem(KEY) || '{"meds":[],"doses":[]}');
@@ -121,6 +136,10 @@
     $("medCount").textContent = `${data.meds.length} medication${data.meds.length===1?"":"s"}`;
     const list=$("medList");
     const meds=[...data.meds].sort((a,b)=>a.name.localeCompare(b.name));
+    for (const id of [...selectedMeds]) if (!data.meds.some(m=>m.id===id)) selectedMeds.delete(id);
+    $("bulkBar").classList.toggle("hidden",selectedMeds.size===0);
+    $("bulkCount").textContent = `${selectedMeds.size} selected`;
+    $("bulkLogBtn").textContent = `Log selected (${selectedMeds.size})`;
     list.innerHTML = meds.length ? meds.map(m=>{
       const d=latest(m.id), interval=Number(m.interval)||0;
       let warning="";
@@ -130,7 +149,7 @@
         else warning=`<div class="warning ok">Entered interval elapsed</div>`;
       } else if(interval>0) warning=`<div class="warning">Interval entered: ${esc(interval)} h</div>`;
       return `<article class="med">
-        <div class="medtop"><div class="pill" aria-hidden="true">💊</div><div class="medinfo">
+        <div class="medtop"><label class="selectmed" aria-label="Select ${esc(m.name)} for batch logging"><input type="checkbox" data-select="${esc(m.id)}" ${selectedMeds.has(m.id)?"checked":""}></label><div class="pill" aria-hidden="true">💊</div><div class="medinfo">
           <div class="medname">${esc(m.name)}</div><div class="doseinfo">${esc(m.dose||"No usual dose entered")}</div>
           <div class="last">Last taken: ${d?esc(fmt(d.time)):"Never logged"}</div>
           ${d?`<div class="elapsed">${esc(elapsed(d.time))}</div>`:""}
@@ -170,6 +189,13 @@
     const i=data.meds.findIndex(m=>m.id===id);
     if(i>=0) data.meds[i]=med; else data.meds.push(med);
     save(); $("medDialog").close(); render(); notify(i>=0?"Medication updated":"Medication added");
+  });
+  $("medList").addEventListener("change",e=>{
+    const checkbox=e.target.closest("[data-select]");
+    if(!checkbox)return;
+    if(checkbox.checked) selectedMeds.add(checkbox.dataset.select);
+    else selectedMeds.delete(checkbox.dataset.select);
+    render();
   });
   $("medList").addEventListener("click",e=>{
     const log=e.target.closest("[data-log]")?.dataset.log;
@@ -218,6 +244,46 @@
       alert("The dose time cannot be in the future."); return;
     }
     saveDoseAt(enteredTime);
+  });
+  function openBulkDialog() {
+    const meds=data.meds.filter(m=>selectedMeds.has(m.id));
+    if(!meds.length){notify("Select at least one medication");return;}
+    $("bulkMedLabel").textContent=meds.map(m=>m.name).join(", ");
+    $("bulkDoseTime").value=toLocalInputValue(new Date());
+    $("bulkCustomTimeRow").classList.add("hidden");
+    $("bulkLogNowBtn").classList.remove("hidden");
+    $("bulkEditTimeBtn").classList.remove("hidden");
+    $("bulkSaveTimeBtn").classList.add("hidden");
+    $("bulkDialog").showModal();
+  }
+  function saveBulkDosesAt(time) {
+    const ids=[...selectedMeds].filter(id=>data.meds.some(m=>m.id===id));
+    if(!ids.length){$("bulkDialog").close();notify("No medications selected");return;}
+    ids.forEach(medId=>data.doses.push({id:uid(),medId,time,amount:"",notes:""}));
+    save();
+    const count=ids.length;
+    selectedMeds.clear();
+    $("bulkDialog").close();
+    render();
+    notify(`${count} medication${count===1?"":"s"} logged`);
+  }
+  $("bulkLogBtn").addEventListener("click",openBulkDialog);
+  $("cancelBulk").addEventListener("click",()=>$("bulkDialog").close());
+  $("bulkLogNowBtn").addEventListener("click",()=>saveBulkDosesAt(Date.now()));
+  $("bulkEditTimeBtn").addEventListener("click",()=>{
+    $("bulkCustomTimeRow").classList.remove("hidden");
+    $("bulkLogNowBtn").classList.add("hidden");
+    $("bulkEditTimeBtn").classList.add("hidden");
+    $("bulkSaveTimeBtn").classList.remove("hidden");
+    $("bulkDoseTime").focus();
+  });
+  $("bulkForm").addEventListener("submit",e=>{
+    e.preventDefault();
+    const value=$("bulkDoseTime").value;
+    const enteredTime=new Date(value).getTime();
+    if(!value||!Number.isFinite(enteredTime)){alert("Please enter a valid date and time.");return;}
+    if(enteredTime>Date.now()){alert("The dose time cannot be in the future.");return;}
+    saveBulkDosesAt(enteredTime);
   });
   $("historyPanel").addEventListener("click",e=>{
     const id=e.target.closest("[data-undo]")?.dataset.undo; if(!id)return;

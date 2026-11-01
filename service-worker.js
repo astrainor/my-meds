@@ -1,4 +1,4 @@
-const CACHE = "my-meds-pwa-v4";
+const CACHE = "my-meds-pwa-v5";
 const FILES = ["./", "./index.html", "./manifest.json", "./icon.svg"];
 
 self.addEventListener("install", event => {
